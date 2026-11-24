@@ -1,7 +1,92 @@
 import streamlit as st  # type: ignore[import-not-found]
+import streamlit.components.v1 as components  # type: ignore[import-not-found]
+import base64
+import os
 import time
+import json
 
 st.set_page_config(page_title="Misión Cumpleaños de Scar", page_icon="🎂")
+
+# --- MOTOR DE AUDIO AUTOMATICO POR CARPETAS ---
+directorio_app = os.path.dirname(os.path.abspath(__file__))
+CARPETA_AMBIENTE = "ambiente"
+CARPETA_BRAINROT = "sonidos brainrot"
+
+
+def obtener_carpeta(nombre_carpeta):
+    candidatos = (
+        os.path.join(directorio_app, nombre_carpeta),
+        os.path.join(directorio_app, "regalo de scar", nombre_carpeta),
+        os.path.join(os.path.dirname(directorio_app), "regalo de scar", nombre_carpeta),
+    )
+    for candidato in candidatos:
+        if os.path.isdir(candidato):
+            return candidato
+    return os.path.join(directorio_app, nombre_carpeta)
+
+
+def cargar_audios_carpeta(carpeta):
+    audios = []
+    tipos = {
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".ogg": "audio/ogg",
+    }
+    if os.path.isdir(carpeta):
+        for archivo in sorted(os.listdir(carpeta)):
+            extension = os.path.splitext(archivo)[1].lower()
+            if extension in tipos:
+                ruta_completa = os.path.join(carpeta, archivo)
+                with open(ruta_completa, "rb") as f:
+                    contenido = base64.b64encode(f.read()).decode()
+                    audios.append({"data": contenido, "mime": tipos[extension]})
+    return audios
+
+
+lista_ambiente = cargar_audios_carpeta(obtener_carpeta(CARPETA_AMBIENTE))
+lista_brainrot = cargar_audios_carpeta(obtener_carpeta(CARPETA_BRAINROT))
+ambiente = lista_ambiente[0] if lista_ambiente else None
+
+if ambiente or lista_brainrot:
+    ambiente_js = json.dumps(ambiente)
+    js_array_brainrot = json.dumps(lista_brainrot)
+    html_audio = f"""
+    <script>
+        if (!window.parent.audioIniciado) {{
+            window.parent.audioIniciado = true;
+
+            const ambiente = {ambiente_js};
+            let bgMusic = null;
+            if (ambiente) {{
+                bgMusic = new Audio("data:" + ambiente.mime + ";base64," + ambiente.data);
+                bgMusic.loop = true;
+                bgMusic.volume = 0.35;
+            }}
+
+            const memes = {js_array_brainrot};
+
+            function lanzarBrainrot() {{
+                if (memes.length > 0) {{
+                    const sonido = memes[Math.floor(Math.random() * memes.length)];
+                    const sfx = new Audio("data:" + sonido.mime + ";base64," + sonido.data);
+                    sfx.volume = 1.0;
+                    sfx.play().catch(e => console.log("Esperando clic..."));
+                }}
+                const siguienteTiempo = Math.floor(Math.random() * (30000 - 15000 + 1)) + 15000;
+                setTimeout(lanzarBrainrot, siguienteTiempo);
+            }}
+
+            window.parent.document.addEventListener("click", function iniciarTodo() {{
+                if (bgMusic) {{
+                    bgMusic.play();
+                }}
+                setTimeout(lanzarBrainrot, 6700);
+                window.parent.document.removeEventListener("click", iniciarTodo);
+            }});
+        }}
+    </script>
+    """
+    components.html(html_audio, height=0, width=0)
 
 # Inicializar memoria de la escena y logros desbloqueados
 if "escena" not in st.session_state:
