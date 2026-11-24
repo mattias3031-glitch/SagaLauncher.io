@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st  # type: ignore[import-not-found]
 import time
 
 st.set_page_config(page_title="Misión Cumpleaños de Scar", page_icon="🎂")
@@ -58,7 +58,7 @@ elif st.session_state.escena == "isla_vinland":
     st.snow() # Efecto de nieve cayendo en la pantalla
     st.header("❄️ Isla 1B: Las Tierras Heladas del Norte")
     st.write("Thorfinn deja de remar, te mira muy serio en medio de la tormenta de nieve y te dice:")
-    st.warning("*"No tienes enemigos, Scar. Nadie tiene enemigos... excepto los que no te felicitan hoy."*")
+    st.warning("No tienes enemigos, Scar. Nadie tiene enemigos... excepto los que no te felicitan hoy.")
     
     if st.button("🤝 Responder: 'Tienes razón, vamos por pastel'"):
         ir_a("final_vikingo")
